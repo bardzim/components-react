@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
 function App() {
 
@@ -8,6 +8,16 @@ function App() {
     const [passwordDirty, setPasswordDirty] = useState(false)
     const [emailError, setEmailError] = useState('Email Must be feeled out')
     const [passwordError, setPaasswordError] = useState('Password Must be feeled out')
+    const [formValid, setFormValid] = useState(false)
+
+    useEffect(() => {
+        if (emailError || passwordError) {
+            setFormValid(false)
+        } else {
+            setFormValid(true)
+        }
+    }, [emailError, passwordError])
+    
 
     const emailHandler = (e) => {
         setEmail(e.target.value)
@@ -48,7 +58,7 @@ function App() {
                 <input onChange={e => emailHandler(e)} value={email} onBlur={e => blurHandler(e)} name='email' type='text' placeholder='Enter Your Email'/>
                 {(passwordDirty && passwordDirty) && <div style={{color: 'red'}}>{passwordError}</div>}
                 <input onChange={e => passwordHandler(e)}  value={password} onBlur={e => blurHandler(e)} name='password' type='password' placeholder='Enter Your Password'/>
-                <button type='submit'>Registration</button>
+                <button disabled={!formValid} type='submit'>Registration</button>
             </form>
         </div>
      )
