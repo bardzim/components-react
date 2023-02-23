@@ -1,64 +1,112 @@
 import React, { useEffect, useState } from 'react'
 
-function App() {
+const useValidation = (value, validations) => {
 
-    const [email,setEmail] = useState('');
-    const [password, setPassword] = useState('')
-    const [emailDirty, setEmailDirty] = useState(false)
-    const [passwordDirty, setPasswordDirty] = useState(false)
-    const [emailError, setEmailError] = useState('Email Must be feeled out')
-    const [passwordError, setPaasswordError] = useState('Password Must be feeled out')
-    const [formValid, setFormValid] = useState(false)
+    const [isEmpty, setIsEmpty] = useState(true)
+    const [minLengthError, setMinLengthError] = useState(true)
+    const [maxLengthError, setMaxLengthError] = useState(false)
+    const [emailError, setEmailError] = useState(false)
+    const [inputValid, setInputValid] = useState(false)
+
+    useEffect(()=> {
+        for (const validation in validations) {
+            switch (validation) {
+                case 'minLength':
+                    value.length < validations[validation] ? setMinLengthError(true) : setMinLengthError(false)
+                    break;
+                case 'isEmpty':
+                    value ? setIsEmpty(false) : setIsEmpty(true)
+                    break;
+                case 'maxLength':
+                    value.length > validations[validation] ? setMaxLengthError(true) : setMaxLengthError(false)
+                    break;
+                case 'isEmail':
+                    const regEmail = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i
+                    regEmail.test(String(value).toLowerCase()) ? setEmailError(false) : setEmailError(true)
+                    break;
+                
+            }
+        }
+    },[value])
 
     useEffect(() => {
-        if (emailError || passwordError) {
-            setFormValid(false)
+        if(isEmpty || maxLengthError || minLengthError || emailError) {
+            setInputValid(false)
         } else {
-            setFormValid(true)
+            setInputValid(true)
         }
-    }, [emailError, passwordError])
+    }, [isEmpty, maxLengthError, minLengthError, emailError])
     
 
-    const emailHandler = (e) => {
-        setEmail(e.target.value)
-        const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i;
-        if (!emailRegex.test(String(e.target.value).toLocaleLowerCase())) {
-            setEmailError('Email is incorrect')
-        } else {
-            setEmailError('')
-        }
+    return {
+        isEmpty,
+        minLengthError,
+        emailError,
+        maxLengthError,
+        inputValid
+    }
+}
+
+
+const useInput = (initialValue, validations) => {
+    const [value, setValue] = useState(initialValue)
+    const [isDirty, setDirty] = useState(false)
+    const valid = useValidation(value, validations)
+
+    const onChange = (e) => {
+        setValue(e.target.value)
     }
 
-    const passwordHandler = (e) => {
-        setPassword(e.target.value)
-        const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[$@!%*?&])[A-Za-z\d$@!%*?&]{4,}$/;
-        if (!passwordRegex.test(String(e.target.value))) {
-            setPaasswordError('Password is incorrect')
-        } else {
-            setPaasswordError('')
-        }
+    const onBlur = (e) => {
+        setDirty(true)
     }
- 
-    const blurHandler = (e) => {
-        switch (e.target.getAttribute('name') || e.target.getAttribute('password')) {
-            case 'email':
-                setEmailDirty(true)
-                break
-            case 'password':
-                setPasswordDirty(true)
-                break
-        }
+
+    return {
+        value,
+        onChange,
+        onBlur,
+        isDirty,
+        ...valid
     }
+}
+
+
+function App() {
+
+    const email = useInput('', {isEmpty: true, minLength: 3, isEmail: true})
+    const password = useInput('', {isEmpty: true, minLength: 5, maxLength: 8})
 
     return (
         <div className='app'>
             <form>
                 <h1>Registration</h1>
-                {(emailDirty && emailError) && <div style={{color: 'red'}}>{emailError}</div>}
-                <input onChange={e => emailHandler(e)} value={email} onBlur={e => blurHandler(e)} name='email' type='text' placeholder='Enter Your Email'/>
-                {(passwordDirty && passwordDirty) && <div style={{color: 'red'}}>{passwordError}</div>}
-                <input onChange={e => passwordHandler(e)}  value={password} onBlur={e => blurHandler(e)} name='password' type='password' placeholder='Enter Your Password'/>
-                <button disabled={!formValid} type='submit'>Registration</button>
+
+                {(email.isDirty && email.isEmpty) && <div style={{color: 'red'}}>Field Cant be Empty</div>}
+                {(email.isDirty && email.minLengthError) && <div style={{color: 'red'}}>Incorrect Length</div>}
+                {(email.isDirty && email.emailError) && <div style={{color: 'red'}}>Email Error</div>}
+
+                <input 
+                    onChange={e => email.onChange(e)} 
+                    onBlur={ e => email.onBlur(e)} 
+                    value={email.value} 
+                    name='email' 
+                    type='text' 
+                    placeholder='Enter Your Email'
+                />
+
+                {(password.isDirty && password.isEmpty) && <div style={{color: 'red'}}>Field Cant be Empty</div>}
+                {(password.isDirty && password.minLengthError) && <div style={{color: 'red'}}>Incorrect Length</div>}
+
+                <input 
+                    onChange={e => password.onChange(e)} 
+                    onBlur={ e => password.onBlur(e)} 
+                    value={password.value} 
+                    name='password' 
+                    type='password' 
+                    placeholder='Enter Your Password...'
+                />
+
+                <button disabled={!email.inputValid || !password.inputValid} type='submit'>Registration</button>
             </form>
         </div>
      )
